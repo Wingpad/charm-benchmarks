@@ -1,0 +1,33 @@
+mainmodule avalanche {
+  mainchare Main {
+    entry [nokeep] Main(CkArgMsg* m);
+
+    entry [threaded] void run(void);
+  };
+
+  group Receiver {
+    entry Receiver(const int&);
+
+    entry void receive(int);
+
+    entry void run(void) {
+      serial {
+        QdCreate(1);
+      }
+      forall [i] (0:(numIters - 1),1) {
+        forall [j] (0:(CkNumPes() - 1),1) {
+          when receive[i](int _) { }
+        }
+      }
+      serial {
+        QdProcess(1);
+      }
+    }
+  };
+
+  group Sender {
+    entry Sender(const int&, const CProxy_Receiver&);
+
+    entry void send(void);
+  };
+};
