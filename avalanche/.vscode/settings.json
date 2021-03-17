@@ -1,6 +1,0 @@
-{
-    "files.associations": {
-        "*.erg": "scala",
-        "avalanche.C": "cpp"
-    }
-}
