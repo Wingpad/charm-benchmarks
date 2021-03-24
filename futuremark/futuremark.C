@@ -49,10 +49,11 @@ struct Exchanger: public CBase_Exchanger {
 
     for (auto i = 0; i < CkNumPes(); i += 1) {
       int recvd = futs[i].get();
-
-      CkAssert((i == recvd) && "sender should send correct value");
-
       futs[i].release();
+
+      if (i != recvd) {
+        CkAbort("did not receive expected value (%d vs. %d)", i, recvd);
+      }
     }
   }
 };
