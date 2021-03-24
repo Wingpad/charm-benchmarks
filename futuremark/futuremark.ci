@@ -1,0 +1,12 @@
+mainmodule futuremark {
+  mainchare Main {
+    entry [nokeep] Main(CkArgMsg* m);
+    entry [threaded] void run(void);
+  };
+
+  group Exchanger {
+    entry Exchanger(void);
+    entry void recvFuture(ck::future<int>);
+    entry [threaded] void exchange(void);
+  };
+};
