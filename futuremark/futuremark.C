@@ -2,6 +2,16 @@
 
 #include "futuremark.decl.h"
 
+/* Compile-time options:
+ *
+ * -DOVERLAP_ITERATIONS
+ *   issues all iterations of a repetition
+ *   without waiting for one to finish
+ *   before issuing the next. multiple
+ *   cthreads will co-exist vs only one
+ *   at a time. usually much slower.
+ */
+
 class Main : public CBase_Main {
   int numIters, numReps;
   CProxy_Exchanger exchangers;
@@ -21,8 +31,13 @@ class Main : public CBase_Main {
       for (int j = 0; j < numIters; j += 1) {
         exchangers.exchange();
 
+#ifndef OVERLAP_ITERATIONS
         CkWaitQD();
+#endif
       }
+#ifdef OVERLAP_ITERATIONS
+      CkWaitQD();
+#endif
       auto end = CkWallTimer();
       avgTime += (end - start);
     }
