@@ -48,7 +48,11 @@ struct Exchanger: public CBase_Exchanger {
     }
 
     for (auto i = 0; i < CkNumPes(); i += 1) {
-      CkAssert(futs[i].get() == i);
+      int recvd = futs[i].get();
+
+      CkAssert((i == recvd) && "sender should send correct value");
+
+      futs[i].release();
     }
   }
 };
