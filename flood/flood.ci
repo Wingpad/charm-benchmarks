@@ -1,0 +1,33 @@
+mainmodule flood {
+
+    initproc void registration(void);
+
+    mainchare main {
+        entry main(CkArgMsg*);
+        entry [threaded] void run(void);
+    };
+
+    group test {
+        entry test(const CkCallback&);
+        entry void recv(int src);
+        entry void run(int iter) {
+            serial {
+                QdCreate(1);
+                this->send();
+            }
+            forall[i] (0:(CkNumPes()-1),1) {
+                when recv[i](int src) serial {
+                    CkPrintf("[%d] received value for iter %d from %d\n",
+                              this->thisIndex, iter, src);
+                }
+            }
+            serial {
+                CkPrintf("[%d] done with iter %d\n",
+                          this->thisIndex, iter);
+                QdProcess(1);
+            }
+        }
+    };
+
+    readonly CProxy_test testers;
+}
