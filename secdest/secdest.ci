@@ -1,33 +1,46 @@
 mainmodule secdest {
+
+  message cookie_msg;
+
   mainchare Main {
     entry [nokeep] Main(CkArgMsg* m);
 
-    entry [threaded] void run(void);
+    entry [threaded] void run(CkArrayCreatedMsg*);
   };
 
-  group Receiver {
-    entry Receiver(const int&);
+  readonly CProxy_Main mainProxy;
 
-    entry void receive(int);
+  array [1D] Contributor {
+    entry Contributor(const int&);
 
-    entry void run(void) {
-      serial {
+    entry [reductiontarget] void redn_done(const int&);
+
+    entry void run(cookie_msg* msg);
+
+    entry void run(const int& numIters) {
+      serial "do multicast" {
         QdCreate(1);
+
+        if (kRecreateSection) {
+          this->create_section();
+        }
+
+        this->numIters = numIters;
+        auto *msg = new cookie_msg(numIters);
+        secProxy.run(msg);
       }
-      forall [i] (0:(numIters - 1),1) {
-        forall [j] (0:(CkNumPes() - 1),1) {
-          when receive[i](int _) { }
+      for (this->it = 0; this->it < this->numIters; this->it += 1) {
+        when redn_done(const int& sum) serial "validate" {
+          CkAssert((sum % this->factor) == 0);
         }
       }
-      serial {
+      serial "process" {
+        if (kRefreshSection && !kRecreateSection) {
+          this->secProxy.resetSection();
+        }
+
         QdProcess(1);
       }
     }
-  };
-
-  group Sender {
-    entry Sender(const int&, const CProxy_Receiver&);
-
-    entry void send(void);
   };
 };
