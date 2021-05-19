@@ -9,7 +9,7 @@
 #endif
 
 #ifndef REFRESH_SECTION
-#define REFRESH_SECTION 0
+#define REFRESH_SECTION 1
 #endif
 
 constexpr auto kDecompFactor = DECOMP_FACTOR;

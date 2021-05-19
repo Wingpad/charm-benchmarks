@@ -23,6 +23,8 @@ mainmodule secdest {
 
         if (kRecreateSection) {
           this->create_section();
+        } else if (kRefreshSection) {
+          this->secProxy.resetSection();
         }
 
         this->numIters = numIters;
@@ -35,9 +37,6 @@ mainmodule secdest {
         }
       }
       serial "process" {
-        if (kRefreshSection && !kRecreateSection) {
-          this->secProxy.resetSection();
-        }
 
         QdProcess(1);
       }

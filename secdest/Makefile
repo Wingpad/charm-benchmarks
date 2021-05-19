@@ -4,7 +4,7 @@ BINARY = secdest
 
 OPTS:=$(OPTS) -g -O2
 
-TESTOPTS:=$(TESTOPTS) 256
+TESTOPTS?=4
 
 CHARMCFLAGS = $(OPTS)
 CHARMCLINKFLAGS = -language charm++ $(OPTS) -lSegFault
