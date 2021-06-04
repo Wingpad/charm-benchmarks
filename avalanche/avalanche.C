@@ -10,11 +10,12 @@
 #endif
 
 constexpr auto kDecompFactor = DECOMP_FACTOR;
+
+#endif
+
 constexpr auto kMaxReps = 65;
 
 /* readonly */ int numElements;
-
-#endif
 
 struct Main : public CBase_Main {
   int numIters, numReps;
