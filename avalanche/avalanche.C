@@ -2,6 +2,20 @@
 
 #include "avalanche.decl.h"
 
+
+#ifdef USE_ARRAY
+
+#ifndef DECOMP_FACTOR
+#define DECOMP_FACTOR 4
+#endif
+
+constexpr auto kDecompFactor = DECOMP_FACTOR;
+constexpr auto kMaxReps = 65;
+
+/* readonly */ int numElements;
+
+#endif
+
 struct Main : public CBase_Main {
   int numIters, numReps;
   CProxy_Receiver receivers;
@@ -9,10 +23,18 @@ struct Main : public CBase_Main {
 
   Main(CkArgMsg *m)
   : numIters(atoi(m->argv[1])), numReps(numIters / 2 + 1) {
-    if (numReps > 129) numReps = 129;
+    if (numReps > kMaxReps) numReps = kMaxReps;
 
+#ifdef USE_ARRAY
+    CkPrintf("main> kDecompFactor=%d, kNumPes=%d\n", kDecompFactor, CkNumPes());
+    numElements = kDecompFactor * CkNumPes();
+    receivers = CProxy_Receiver::ckNew(numIters, numElements);
+    senders = CProxy_Sender::ckNew(numIters, receivers, numElements);
+#else
+    numElements = CkNumPes();
     receivers = CProxy_Receiver::ckNew(numIters);
     senders = CProxy_Sender::ckNew(numIters, receivers);
+#endif
 
     thisProxy.run();
   }
@@ -59,7 +81,7 @@ public:
 
   void send(void) {
     for (int i = 0; i < numIters; i++) {
-      for (int j = 0; j < CkNumPes(); j++) {
+      for (int j = 0; j < numElements; j++) {
         receivers[j].receive(i);
       }
     }

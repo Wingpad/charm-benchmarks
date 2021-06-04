@@ -5,7 +5,13 @@ mainmodule avalanche {
     entry [threaded] void run(void);
   };
 
+  readonly int numElements;
+
+#ifdef USE_ARRAY
+  array [1D] Receiver {
+#else
   group Receiver {
+#endif
     entry Receiver(const int&);
 
     entry void receive(int);
@@ -15,7 +21,7 @@ mainmodule avalanche {
         QdCreate(1);
       }
       forall [i] (0:(numIters - 1),1) {
-        forall [j] (0:(CkNumPes() - 1),1) {
+        forall [j] (0:(numElements - 1),1) {
           when receive[i](int _) { }
         }
       }
@@ -25,7 +31,11 @@ mainmodule avalanche {
     }
   };
 
+#ifdef USE_ARRAY
+  array [1D] Sender {
+#else
   group Sender {
+#endif
     entry Sender(const int&, const CProxy_Receiver&);
 
     entry void send(void);

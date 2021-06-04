@@ -5,6 +5,9 @@ BINARY = avalanche
 CHARMCFLAGS = $(OPTS)
 CHARMCLINKFLAGS = -language charm++ $(OPTS)
 
+CMK_NUM_PES?=7
+TESTOPTS?=++local 256 ++ppn $(CMK_NUM_PES)
+
 %.o: %.C
 
 all: $(BINARY)
@@ -23,7 +26,7 @@ $(BINARY): $(patsubst %.C,%.o,$(wildcard *.C))
 	$(CHARMC) $(CHARMCFLAGS) $<
 
 test: $(BINARY)
-	./charmrun ++local ++ppn 7 ./$(BINARY) 256
+	./charmrun +p$(CMK_NUM_PES) ./$(BINARY) $(TESTOPTS)
 
 clean:
 	rm -f *.o *.decl.h *.def.h charmrun $(BINARY)
