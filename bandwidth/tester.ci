@@ -1,0 +1,55 @@
+mainmodule tester {
+  mainchare Main {
+    entry [nokeep] Main(CkArgMsg* m);
+
+    entry void completion(void);
+
+    entry void run(int size) {
+      serial { this->data = new double[size];
+               this->totalTime = 0; }
+      for (rep = 0; rep < (nReps + nSkip); rep += 1) {
+        serial {
+          this->start = CkWallTimer(); 
+          receiver.run(nIters);
+          for (auto it = 0; it < nIters; it += 1) {
+            receiver.arrival(size, this->data); 
+          }
+        }
+        when completion(void) serial {
+          auto end = CkWallTimer();
+          auto time = end - start;
+          if (rep >= nSkip) {
+            this->totalTime += time;
+          }
+          CkPrintf("info> rep %d of %d finished in %f s\n",
+                   rep, (nReps + nSkip), time);
+        }
+      }
+      serial {
+        auto avgTime = this->totalTime / this->nReps;
+        auto kb = (size * sizeof(double)) / 1024;
+        auto bw = (kb * this->nIters) / (avgTime * 1024.0);
+        CkPrintf("--- summary of %lu KB ---\n", kb);
+        CkPrintf("avg time per iter\t= %g ms\n", avgTime * 1000);
+        CkPrintf("avg bandwidth\t\t= %g MB/s\n", bw);
+        delete[] this->data;
+        CkExit();
+      }
+    }
+  };
+
+  chare Receiver {
+    entry Receiver(void);
+
+    entry void arrival(int size, double arr[size]);
+
+    entry void run(int nMsgs) {
+      forall [it] (0:(nMsgs - 1),1) {
+        when arrival(int size, double arr[size]) serial {}
+      }
+      serial { mainProxy.completion(); }
+    }
+  };
+
+  readonly CProxy_Main mainProxy;
+};
