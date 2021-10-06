@@ -2,6 +2,7 @@ mainmodule tester {
   mainchare Main {
     entry [nokeep] Main(CkArgMsg* m);
 
+    entry void next(void);
     entry void completion(void);
 
     entry void run(int size) {
@@ -21,19 +22,15 @@ mainmodule tester {
           if (rep >= nSkip) {
             this->totalTime += time;
           }
-          CkPrintf("info> rep %d of %d finished in %f s\n",
-                   rep, (nReps + nSkip), time);
         }
       }
       serial {
         auto avgTime = this->totalTime / this->nReps;
-        auto kb = (size * sizeof(double)) / 1024;
-        auto bw = (kb * this->nIters) / (avgTime * 1024.0);
-        CkPrintf("--- summary of %lu KB ---\n", kb);
-        CkPrintf("avg time per iter\t= %g ms\n", avgTime * 1000);
-        CkPrintf("avg bandwidth\t\t= %g MB/s\n", bw);
+        auto totalSize = size * sizeof(double);
+        auto bw = (totalSize * this->nIters) / (avgTime * 1024.0 * 1024.0);
+        CkPrintf("%lu\t\t%g\n", totalSize, bw);
         delete[] this->data;
-        CkExit();
+        thisProxy.next();
       }
     }
   };
