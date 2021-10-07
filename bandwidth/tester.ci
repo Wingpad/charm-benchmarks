@@ -5,9 +5,9 @@ mainmodule tester {
     entry void next(void);
     entry void completion(void);
 
+#if USE_SDAG
     entry void run(int size) {
-      serial { this->data = new double[size];
-               this->totalTime = 0; }
+      serial { this->initialize(size); }
       for (rep = 0; rep < (nReps + nSkip); rep += 1) {
         serial {
           this->start = CkWallTimer(); 
@@ -24,15 +24,11 @@ mainmodule tester {
           }
         }
       }
-      serial {
-        auto avgTime = this->totalTime / this->nReps;
-        auto totalSize = size * sizeof(double);
-        auto bw = (totalSize * this->nIters) / (avgTime * 1024.0 * 1024.0);
-        CkPrintf("%lu\t\t%g\n", totalSize, bw);
-        delete[] this->data;
-        thisProxy.next();
-      }
+      serial { this->finalize(size); }
     }
+#else
+    entry [threaded] void run(int size);
+#endif
   };
 
   chare Receiver {
@@ -40,12 +36,17 @@ mainmodule tester {
 
     entry void arrival(int size, double arr[size]);
 
-    entry void run(int nMsgs) {
+    entry void run(int nMsgs)
+#if USE_SDAG
+    {
       forall [it] (0:(nMsgs - 1),1) {
         when arrival(int size, double arr[size]) serial {}
       }
       serial { mainProxy.completion(); }
     }
+#else
+    ;
+#endif
   };
 
   readonly CProxy_Main mainProxy;

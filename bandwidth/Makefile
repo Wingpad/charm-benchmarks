@@ -2,8 +2,10 @@
 CHARMC=$(CHARM_HOME)/bin/charmc
 BINARY=tester
 
+USE_SDAG?=1
+OPTS:=$(OPTS) -DUSE_SDAG=$(USE_SDAG)
 CHARMCFLAGS=$(OPTS) -Ofast -g3
-CHARMCLINKFLAGS=-language charm++ $(OPTS)
+CHARMCLINKFLAGS=$(OPTS) -language charm++
 
 CMK_NUM_PES?=2
 TESTOPTS?=128 128
