@@ -9,7 +9,7 @@ struct Main : public CBase_Main {
   int nIters, nReps, nSkip;
   int rep;
 
-  double* data;
+  char* data;
   double start, totalTime;
 
   std::deque<int> sizes;
@@ -28,8 +28,8 @@ struct Main : public CBase_Main {
     auto whichPe = (whichNode == CkMyNode()) ? ((CkMyPe() + 1) % CkNumPes())
                                              : CkNodeFirst(whichNode);
 
-    auto maxSize = 512 * 1024;
-    for (auto size = 1; size <= maxSize; size *= 2) {
+    auto maxSize = 4 * 1024 * 1024;
+    for (auto size = 8; size <= maxSize; size *= 2) {
       this->sizes.push_back(size);
     }
 
@@ -50,14 +50,14 @@ struct Main : public CBase_Main {
   }
 
   inline void initialize(const int& size) {
-    this->data = new double[size];
+    this->data = new char[size];
     this->totalTime = 0;
     this->th = CthSelf();
   }
 
   inline void finalize(const int& size) {
     auto avgTime = this->totalTime / this->nReps;
-    auto totalSize = size * sizeof(double);
+    auto totalSize = size * sizeof(char);
     auto bw = (totalSize * this->nIters) / (avgTime * 1024.0 * 1024.0);
     CkPrintf("%lu\t\t%g\n", totalSize, bw);
     delete[] this->data;
@@ -104,7 +104,7 @@ class Receiver : public CBase_Receiver {
     this->arrival(0, nullptr, false);
   }
 
-  inline void arrival(const int& size, double* data,
+  inline void arrival(const int& size, char* data,
                       const bool& increment = true) {
     if (increment) {
       this->it += 1;

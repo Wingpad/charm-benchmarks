@@ -34,13 +34,13 @@ mainmodule tester {
   chare Receiver {
     entry Receiver(void);
 
-    entry void arrival(int size, double arr[size]);
+    entry void arrival(int size, char arr[size]);
 
     entry void run(int nMsgs)
 #if USE_SDAG
     {
       forall [it] (0:(nMsgs - 1),1) {
-        when arrival(int size, double arr[size]) serial {}
+        when arrival(int size, char arr[size]) serial {}
       }
       serial { mainProxy.completion(); }
     }
