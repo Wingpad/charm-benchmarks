@@ -1,5 +1,9 @@
 #include "tester.hh"
 
+#include <thread>
+
+static_assert(!CMK_SMP, "this benchmark only runs on non-SMP builds");
+
 void handleMsg(void *msg) {
   if (++CpvAccess(it) >= CpvAccess(nIters)) {
     CmiSetHandler(msg, CpvAccess(doneHandlerIdx));
@@ -18,15 +22,32 @@ void handleDone(void *msg) {
   CpvAccess(it) = 0;
 
   if (++CpvAccess(rep) >= CpvAccess(nReps)) {
-    const char *phase = CpvAccess(phase) ? "thread" : "handler";
     CmiPrintf("%d> average time for %d %s switches was %g us.\n", CmiMyPe(),
-              CpvAccess(nIters), phase, (1e6 * totalTime) / CpvAccess(nReps));
-    if (++CpvAccess(phase) == 1) {
-      auto th = CthCreate((CthVoidFn)runThread, msg, 0);
-      CthAwaken(th);
-    } else {
-      CmiFree(msg);
-      CsdExitScheduler();
+              CpvAccess(nIters), phaseToString(CpvAccess(phase)),
+              (1e6 * totalTime) / CpvAccess(nReps));
+    switch (++CpvAccess(phase)) {
+      case 1: {
+        auto th = CthCreate((CthVoidFn)runCthThread, msg, 0);
+        CthAwaken(th);
+        break;
+      }
+      case 2: {
+        std::thread th(runCppThread, msg);
+        th.detach();
+        break;
+      }
+      case 3: {
+        pthread_t th;
+        int err = pthread_create(&th, nullptr, &runPthread, msg);
+        CmiEnforceMsg(!err, "could not create pthread!");
+        pthread_detach(th);
+        break;
+      }
+      default: {
+        CmiFree(msg);
+        CsdExitScheduler();
+        break;
+      }
     }
   } else {
     CpvAccess(startTime) = CmiWallTimer();
@@ -35,15 +56,31 @@ void handleDone(void *msg) {
   }
 }
 
-void runThread(void* msg) {
+using yield_fn_t = void (*)(void);
+template <yield_fn_t Fn>
+void runThread(void *msg) {
   CpvAccess(startTime) = CmiWallTimer();
 
-  while (++CpvAccess(it) >= CpvAccess(nIters)) {
-    CthYield();
+  auto &it = CpvAccess(it);
+  while (++it >= CpvAccess(nIters)) {
+    Fn();
   }
 
   CmiSetHandler(msg, CpvAccess(doneHandlerIdx));
   CmiSyncSendAndFree(CmiMyPe(), sizeof(EmptyMsg), (char *)msg);
+}
+
+void runCthThread(void *msg) { runThread<CthYield>(msg); }
+
+void runCppThread(void *msg) { runThread<std::this_thread::yield>(msg); }
+
+void yieldPthread(void) {
+  CmiEnforceMsg(pthread_yield(), "could not yield pthread!");
+}
+
+void *runPthread(void *msg) {
+  runThread<yieldPthread>(msg);
+  return nullptr;
 }
 
 void handleInit(int argc, char **argv) {
@@ -63,6 +100,7 @@ void handleInit(int argc, char **argv) {
   CpvAccess(startTime) = CmiWallTimer();
   // GO--!
   if (CmiMyPe() == 0) {
+    CmiPrintf("%d> cthread built with: %s\n", CmiMyPe(), cthThreadBuild());
     EmptyMsg msg;
     CmiSetHandler(&msg, CpvAccess(msgHandlerIdx));
     CmiSyncSend(CmiMyPe(), sizeof(EmptyMsg), reinterpret_cast<char *>(&msg));
