@@ -56,8 +56,8 @@ void handleInit(int argc, char **argv) {
   CpvAccess(it) = 0;
   CpvAccess(rep) = 0;
   CpvAccess(phase) = 0;
+  CpvAccess(nIters) = (argc > 1) ? atoi(argv[1]) : 128;
   CpvAccess(nReps) = 11;
-  CpvAccess(nIters) = 128;
   // Setup timing
   CpvAccess(totalTime) = 0;
   CpvAccess(startTime) = CmiWallTimer();
