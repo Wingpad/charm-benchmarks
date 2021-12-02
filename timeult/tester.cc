@@ -14,6 +14,45 @@ void handleMsg(void *msg) {
   CmiSyncSendAndFree(CmiMyPe(), sizeof(EmptyMsg), (char *)msg);
 }
 
+inline void action(void *msg) {
+  switch (CpvAccess(phase)) {
+  case 0: {
+    CpvAccess(startTime) = CmiWallTimer();
+    CmiSetHandler(msg, CpvAccess(msgHandlerIdx));
+    CmiSyncSendAndFree(CmiMyPe(), sizeof(EmptyMsg), (char *)msg);
+    break;
+  }
+  case 1: {
+    auto th = CthCreate((CthVoidFn)runCthThread, msg, 0);
+    CthAwaken(th);
+    break;
+  }
+  case 2: {
+    std::thread th(runCppThread, msg);
+    th.detach();
+    break;
+  }
+  case 3: {
+    pthread_t th;
+    int err = pthread_create(&th, nullptr, &runPthread, msg);
+    CmiEnforceMsg(!err, "could not create pthread!");
+    pthread_detach(th);
+    break;
+  }
+  default: {
+    CmiFree(msg);
+    CsdExitScheduler();
+    break;
+  }
+  }
+}
+
+inline void handleCleanup(void) {
+  CpvAccess(phase)++;
+  CpvAccess(rep) = 0;
+  CpvAccess(totalTime) = 0;
+}
+
 void handleDone(void *msg) {
   auto time = CmiWallTimer() - CpvAccess(startTime);
   auto &totalTime = CpvAccess(totalTime);
@@ -25,40 +64,14 @@ void handleDone(void *msg) {
     CmiPrintf("%d> average time for %d %s switches was %g us.\n", CmiMyPe(),
               CpvAccess(nIters), phaseToString(CpvAccess(phase)),
               (1e6 * totalTime) / CpvAccess(nReps));
-    switch (++CpvAccess(phase)) {
-      case 1: {
-        auto th = CthCreate((CthVoidFn)runCthThread, msg, 0);
-        CthAwaken(th);
-        break;
-      }
-      case 2: {
-        std::thread th(runCppThread, msg);
-        th.detach();
-        break;
-      }
-      case 3: {
-        pthread_t th;
-        int err = pthread_create(&th, nullptr, &runPthread, msg);
-        CmiEnforceMsg(!err, "could not create pthread!");
-        pthread_detach(th);
-        break;
-      }
-      default: {
-        CmiFree(msg);
-        CsdExitScheduler();
-        break;
-      }
-    }
-  } else {
-    CpvAccess(startTime) = CmiWallTimer();
-    CmiSetHandler(msg, CpvAccess(msgHandlerIdx));
-    CmiSyncSendAndFree(CmiMyPe(), sizeof(EmptyMsg), (char *)msg);
+    handleCleanup();
   }
+
+  action(msg);
 }
 
 using yield_fn_t = void (*)(void);
-template <yield_fn_t Fn>
-void runThread(void *msg) {
+template <yield_fn_t Fn> void runThread(void *msg) {
   CpvAccess(startTime) = CmiWallTimer();
 
   auto &it = CpvAccess(it);
