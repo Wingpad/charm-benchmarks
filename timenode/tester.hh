@@ -6,16 +6,14 @@
 
 #include "converse.h"
 
-CpvDeclare(int, it);
-CpvDeclare(int, nIters);
+CsvDeclare(int, it);
+CsvDeclare(int, nIters);
+CsvDeclare(int, rep);
+CsvDeclare(int, nReps);
+CsvDeclare(int, phase);
 
-CpvDeclare(int, rep);
-CpvDeclare(int, nReps);
-
-CpvDeclare(int, phase);
-
-CpvDeclare(double, startTime);
-CpvDeclare(double, totalTime);
+CsvDeclare(double, startTime);
+CsvDeclare(double, totalTime);
 
 CpvDeclare(int, msgHandlerIdx);
 CpvDeclare(int, doneHandlerIdx);
@@ -28,13 +26,13 @@ struct EmptyMsg {
 };
 
 void initializeGlobals(void) {
-  CpvInitialize(int, it);
-  CpvInitialize(int, nIters);
-  CpvInitialize(int, rep);
-  CpvInitialize(int, nReps);
-  CpvInitialize(int, phase);
-  CpvInitialize(double, startTime);
-  CpvInitialize(double, totalTime);
+  CsvInitialize(int, it);
+  CsvInitialize(int, nIters);
+  CsvInitialize(int, rep);
+  CsvInitialize(int, nReps);
+  CsvInitialize(int, phase);
+  CsvInitialize(double, startTime);
+  CsvInitialize(double, totalTime);
   CpvInitialize(int, msgHandlerIdx);
   CpvInitialize(int, doneHandlerIdx);
   CpvInitialize(int, exitHandlerIdx);

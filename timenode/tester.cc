@@ -3,7 +3,7 @@
 #include <thread>
 
 void handleMsg(void *msg) {
-  if (++CpvAccess(it) >= CpvAccess(nIters)) {
+  if (++CsvAccess(it) >= CsvAccess(nIters)) {
     CmiSetHandler(msg, CpvAccess(doneHandlerIdx));
   } else {
     CmiSetHandler(msg, CpvAccess(msgHandlerIdx));
@@ -13,15 +13,15 @@ void handleMsg(void *msg) {
 }
 
 inline void handleCleanup(void) {
-  CpvAccess(phase)++;
-  CpvAccess(rep) = 0;
-  CpvAccess(totalTime) = 0;
+  CsvAccess(phase)++;
+  CsvAccess(rep) = 0;
+  CsvAccess(totalTime) = 0;
 }
 
 inline void action(void *msg) {
-  switch (CpvAccess(phase)) {
+  switch (CsvAccess(phase)) {
   case 0: {
-    CpvAccess(startTime) = CmiWallTimer();
+    CsvAccess(startTime) = CmiWallTimer();
     CmiSetHandler(msg, CpvAccess(msgHandlerIdx));
     CmiSyncNodeSendAndFree(CmiMyNode(), sizeof(EmptyMsg), (char *)msg);
     break;
@@ -35,17 +35,17 @@ inline void action(void *msg) {
 }
 
 void handleDone(void *msg) {
-  auto time = CmiWallTimer() - CpvAccess(startTime);
-  auto &totalTime = CpvAccess(totalTime);
+  auto time = CmiWallTimer() - CsvAccess(startTime);
+  auto &totalTime = CsvAccess(totalTime);
   totalTime += time;
 
-  CpvAccess(it) = 0;
+  CsvAccess(it) = 0;
 
-  if (++CpvAccess(rep) >= CpvAccess(nReps)) {
+  if (++CsvAccess(rep) >= CsvAccess(nReps)) {
     CmiPrintf("%d> average time for %d exchanges was %g us.\n", CmiMyPe(),
-              CpvAccess(nIters), (1e6 * totalTime) / CpvAccess(nReps));
+              CsvAccess(nIters), (1e6 * totalTime) / CsvAccess(nReps));
     CmiPrintf("%d> average time for per exchange was %g ns.\n", CmiMyPe(),
-              ((1e9 * totalTime) / (CpvAccess(nReps) * CpvAccess(nIters))));
+              ((1e9 * totalTime) / (CsvAccess(nReps) * CsvAccess(nIters))));
 
     handleCleanup();
   }
@@ -60,21 +60,21 @@ void handleExit(void* msg) {
 
 void handleInit(int argc, char **argv) {
   if (CmiInCommThread()) return;
-  // Call CpvInitialize on all pseudo-globals
+  // Call CsvInitialize on all pseudo-globals
   initializeGlobals();
   // Register handlers
   CpvAccess(msgHandlerIdx) = CmiRegisterHandler((CmiHandler)handleMsg);
   CpvAccess(doneHandlerIdx) = CmiRegisterHandler((CmiHandler)handleDone);
   CpvAccess(exitHandlerIdx) = CmiRegisterHandler((CmiHandler)handleExit);
   // Setup arguments
-  CpvAccess(it) = 0;
-  CpvAccess(rep) = 0;
-  CpvAccess(phase) = 0;
-  CpvAccess(nReps) = (argc > 2) ? atoi(argv[2]) : 11;
-  CpvAccess(nIters) = (argc > 1) ? atoi(argv[1]) : 128;
+  CsvAccess(it) = 0;
+  CsvAccess(rep) = 0;
+  CsvAccess(phase) = 0;
+  CsvAccess(nReps) = (argc > 2) ? atoi(argv[2]) : 11;
+  CsvAccess(nIters) = (argc > 1) ? atoi(argv[1]) : 128;
   // Setup timing
-  CpvAccess(totalTime) = 0;
-  CpvAccess(startTime) = CmiWallTimer();
+  CsvAccess(totalTime) = 0;
+  CsvAccess(startTime) = CmiWallTimer();
   // GO--!
   if (CmiMyPe() == 0) {
     EmptyMsg msg;
