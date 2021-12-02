@@ -109,7 +109,9 @@ void handleInit(int argc, char **argv) {
   CpvAccess(rep) = 0;
   CpvAccess(phase) = 0;
   CpvAccess(nIters) = (argc > 1) ? atoi(argv[1]) : 128;
-  CpvAccess(nReps) = 11;
+  CpvAccess(nReps) = (argc > 2) ? atoi(argv[2]) : 11;
+  CmiPrintf("%d> will run %d switches total\n", CmiMyPe(),
+            CpvAccess(nIters) * CpvAccess(nReps));
   // Setup timing
   CpvAccess(totalTime) = 0;
   CpvAccess(startTime) = CmiWallTimer();
