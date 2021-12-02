@@ -61,9 +61,11 @@ void handleDone(void *msg) {
   CpvAccess(it) = 0;
 
   if (++CpvAccess(rep) >= CpvAccess(nReps)) {
+    const char *phase = phaseToString(CpvAccess(phase));
     CmiPrintf("%d> average time for %d %s switches was %g us.\n", CmiMyPe(),
-              CpvAccess(nIters), phaseToString(CpvAccess(phase)),
-              (1e6 * totalTime) / CpvAccess(nReps));
+              CpvAccess(nIters), phase, (1e6 * totalTime) / CpvAccess(nReps));
+    CmiPrintf("%d> average time per %s switch was: %g ns\n\n", CmiMyPe(), phase,
+              (1e9 * totalTime) / (CpvAccess(nIters) * CpvAccess(nReps)));
     handleCleanup();
   }
 
@@ -113,7 +115,7 @@ void handleInit(int argc, char **argv) {
   CpvAccess(startTime) = CmiWallTimer();
   // GO--!
   if (CmiMyPe() == 0) {
-    CmiPrintf("%d> cthread built with: %s\n", CmiMyPe(), cthThreadBuild());
+    CmiPrintf("%d> cthread built with: %s\n\n", CmiMyPe(), cthThreadBuild());
     EmptyMsg msg;
     CmiSetHandler(&msg, CpvAccess(msgHandlerIdx));
     CmiSyncSend(CmiMyPe(), sizeof(EmptyMsg), reinterpret_cast<char *>(&msg));
