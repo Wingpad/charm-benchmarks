@@ -91,11 +91,7 @@ void runCthThread(void *msg) { runThread<CthYield>(msg); }
 void runCppThread(void *msg) { runThread<std::this_thread::yield>(msg); }
 
 void yieldPthread(void) {
-#if __APPLE__
-  pthread_yield_np();
-#else
-  CmiEnforceMsg(pthread_yield(), "could not yield pthread!");
-#endif
+  CmiEnforceMsg(sched_yield() == 0, "could not yield pthread!");
 }
 
 void *runPthread(void *msg) {
