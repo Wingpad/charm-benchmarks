@@ -16,34 +16,34 @@ void handleMsg(void *msg) {
 
 inline void action(void *msg) {
   switch (CpvAccess(phase)) {
-  case 0: {
-    CpvAccess(startTime) = CmiWallTimer();
-    CmiSetHandler(msg, CpvAccess(msgHandlerIdx));
-    CmiSyncSendAndFree(CmiMyPe(), sizeof(EmptyMsg), (char *)msg);
-    break;
-  }
-  case 1: {
-    auto th = CthCreate((CthVoidFn)runCthThread, msg, 0);
-    CthAwaken(th);
-    break;
-  }
-  case 2: {
-    std::thread th(runCppThread, msg);
-    th.detach();
-    break;
-  }
-  case 3: {
-    pthread_t th;
-    int err = pthread_create(&th, nullptr, &runPthread, msg);
-    CmiEnforceMsg(!err, "could not create pthread!");
-    pthread_detach(th);
-    break;
-  }
-  default: {
-    CmiFree(msg);
-    CsdExitScheduler();
-    break;
-  }
+    case 0: {
+      CpvAccess(startTime) = CmiWallTimer();
+      CmiSetHandler(msg, CpvAccess(msgHandlerIdx));
+      CmiSyncSendAndFree(CmiMyPe(), sizeof(EmptyMsg), (char *)msg);
+      break;
+    }
+    case 1: {
+      auto th = CthCreate((CthVoidFn)runCthThread, msg, 0);
+      CthAwaken(th);
+      break;
+    }
+    case 2: {
+      std::thread th(runCppThread, msg);
+      th.detach();
+      break;
+    }
+    case 3: {
+      pthread_t th;
+      int err = pthread_create(&th, nullptr, &runPthread, msg);
+      CmiEnforceMsg(!err, "could not create pthread!");
+      pthread_detach(th);
+      break;
+    }
+    default: {
+      CmiFree(msg);
+      CsdExitScheduler();
+      break;
+    }
   }
 }
 
@@ -73,11 +73,12 @@ void handleDone(void *msg) {
 }
 
 using yield_fn_t = void (*)(void);
-template <yield_fn_t Fn> void runThread(void *msg) {
+template <yield_fn_t Fn>
+void runThread(void *msg) {
   CpvAccess(startTime) = CmiWallTimer();
 
   auto &it = CpvAccess(it);
-  while (++it >= CpvAccess(nIters)) {
+  for (CmiAssert(it == 0); it < CpvAccess(nIters); it++) {
     Fn();
   }
 
@@ -90,7 +91,11 @@ void runCthThread(void *msg) { runThread<CthYield>(msg); }
 void runCppThread(void *msg) { runThread<std::this_thread::yield>(msg); }
 
 void yieldPthread(void) {
+#if __APPLE__
+  pthread_yield_np();
+#else
   CmiEnforceMsg(pthread_yield(), "could not yield pthread!");
+#endif
 }
 
 void *runPthread(void *msg) {
