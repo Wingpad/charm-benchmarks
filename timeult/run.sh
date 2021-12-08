@@ -2,20 +2,44 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-fname="${HOSTNAME%.*}_$1_$(date +%s).txt"
-allCounts=(1024 2048 4096 8192 16384)
+ts="$(date +%s)"
+opts="-Ofast"
 
-echo "redirecting stdout to $fname"
+run_with_logging() {
+    printf "\n> %s\n" "$1" | tee -a "$2"
+    set +e
+    eval "$1" 2>&1 | tee -a "$2"
+    retval=$?
+    set -e
+}
 
-pgm="./tester"
-if command -v srun &> /dev/null; then
-    runner="srun --mpi=pmi2 -n 1"
-else
-    runner="./charmrun ++local +p1"
-fi
+for lib in "$CHARM_HOME"/lib/libthreads*.a; do
+    lib="${lib##*/}"
+    lib="${lib##*libthreads-}"
+    lib="${lib%%.a}"
 
-for count in ${allCounts[@]}; do
-    cmd="$runner $pgm $count"
-    printf "\n> $cmd\n" | tee -a $fname
-    eval $cmd | tee -a $fname
+    echo "running with: $lib"
+
+    fname="${HOSTNAME%.*}_${lib}_$ts.txt"
+    counts=(1024 2048 4096 8192 16384)
+
+    make clean
+    cmd="OPTS=\"$opts -thread $lib\" make"
+    run_with_logging "$cmd" "$fname"
+
+    pgm="./tester"
+    if command -v srun &> /dev/null; then
+        runner="srun --mpi=pmi2 -n 1"
+    else
+        runner="./charmrun ++local +p1"
+    fi
+
+    for count in "${counts[@]}"; do
+        cmd="$runner $pgm $count"
+        run_with_logging "$cmd" "$fname"
+        # early termination if we fail
+        if [ "$retval" != "0" ]; then
+            break
+        fi
+    done
 done
