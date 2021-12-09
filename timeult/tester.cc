@@ -16,34 +16,41 @@ void handleMsg(void *msg) {
 
 inline void action(void *msg) {
   switch (CpvAccess(phase)) {
-    case 0: {
-      CpvAccess(startTime) = CmiWallTimer();
-      CmiSetHandler(msg, CpvAccess(msgHandlerIdx));
-      CmiSyncSendAndFree(CmiMyPe(), sizeof(EmptyMsg), (char *)msg);
-      break;
-    }
-    case 1: {
-      auto th = CthCreate((CthVoidFn)runCthThread, msg, 0);
-      CthAwaken(th);
-      break;
-    }
-    case 2: {
-      std::thread th(runCppThread, msg);
-      th.detach();
-      break;
-    }
-    case 3: {
-      pthread_t th;
-      int err = pthread_create(&th, nullptr, &runPthread, msg);
-      CmiEnforceMsg(!err, "could not create pthread!");
-      pthread_detach(th);
-      break;
-    }
-    default: {
-      CmiFree(msg);
-      CsdExitScheduler();
-      break;
-    }
+  case 0: {
+    CpvAccess(startTime) = CmiWallTimer();
+    CmiSetHandler(msg, CpvAccess(msgHandlerIdx));
+    CmiSyncSendAndFree(CmiMyPe(), sizeof(EmptyMsg), (char *)msg);
+    break;
+  }
+  case 1: {
+    auto th = CthCreate((CthVoidFn)runCthThread, msg, 0);
+    CthAwaken(th);
+    break;
+  }
+  case 2: {
+    std::thread th(runCppThread, msg);
+    th.detach();
+    break;
+  }
+  case 3: {
+    pthread_t th;
+    int err = pthread_create(&th, nullptr, &runPthread, msg);
+    CmiEnforceMsg(!err, "could not create pthread!");
+    pthread_detach(th);
+    break;
+  }
+#if HAS_BOOST_FIBER
+  case 4: {
+    boost::fibers::fiber f(runBoostFiber, msg);
+    f.join();
+    break;
+  }
+#endif
+  default: {
+    CmiFree(msg);
+    CsdExitScheduler();
+    break;
+  }
   }
 }
 
@@ -89,6 +96,8 @@ void runThread(void *msg) {
 void runCthThread(void *msg) { runThread<CthYield>(msg); }
 
 void runCppThread(void *msg) { runThread<std::this_thread::yield>(msg); }
+
+void runBoostFiber(void *msg) { runThread<boost::this_fiber::yield>(msg); }
 
 void yieldPthread(void) {
   CmiEnforceMsg(sched_yield() == 0, "could not yield pthread!");
