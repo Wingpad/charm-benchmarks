@@ -4,6 +4,14 @@ struct test_main : public CBase_test_main {
   int nReps, nIters;
 
   test_main(CkArgMsg *m) : nReps(11), nIters(128) {
+    // read command-line arguments
+    if (m->argc >= 2) {
+      nIters = atoi(m->argv[1]);
+    }
+
+    if (m->argc >= 3) {
+      nReps = atoi(m->argv[2]);
+    }
     // warm up
     run_all(false);
     // then report
