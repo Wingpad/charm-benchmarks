@@ -4,6 +4,13 @@
 #include <algorithm>
 #include <ctime>
 
+#if defined __has_include
+#if __has_include(<boost/fiber/all.hpp>)
+#include <boost/fiber/all.hpp>
+#define HAS_BOOST_FIBER 1
+#endif
+#endif
+
 #include "converse.h"
 
 CpvDeclare(int, it);
@@ -38,40 +45,47 @@ void initializeGlobals(void) {
   CpvInitialize(int, doneHandlerIdx);
 }
 
-void *runPthread(void* msg);
-void runCppThread(void* msg);
-void runCthThread(void* msg);
+void *runPthread(void *msg);
+void runCppThread(void *msg);
+void runCthThread(void *msg);
+#if HAS_BOOST_FIBER
+void runBoostFiber(void *msg);
+#endif
 
-const char* cthThreadBuild(void) {
+const char *cthThreadBuild(void) {
 #if CMK_THREADS_BUILD_DEFAULT
-    return "default";
+  return "default";
 #elif CMK_THREADS_USE_JCONTEXT
-    return "jcontext";
+  return "jcontext";
 #elif CMK_THREADS_USE_FCONTEXT
-    return "fcontext";
+  return "fcontext";
 #elif CMK_THREADS_USE_CONTEXT
-    return "context";
+  return "context";
 #elif CMK_THREADS_ARE_WIN32_FIBERS
-    return "win32-fibers";
+  return "win32-fibers";
 #elif CMK_THREADS_USE_PTHREADS
-    return "pthreads";
+  return "pthreads";
 #else
-    return "???";
+  return "???";
 #endif
 }
 
-const char* phaseToString(int phase) {
+const char *phaseToString(int phase) {
   switch (phase) {
-    case 0:
-      return "converse handler";
-    case 1:
-      return "cthread (non-migratable)";
-    case 2:
-      return "std::thread";
-    case 3:
-      return "pthread";
-    default:
-      return "???";
+  case 0:
+    return "converse handler";
+  case 1:
+    return "cthread (non-migratable)";
+  case 2:
+    return "std::thread";
+  case 3:
+    return "pthread";
+#if HAS_BOOST_FIBER
+  case 4:
+    return "boost::fibers::fiber";
+#endif
+  default:
+    return "???";
   }
 }
 
