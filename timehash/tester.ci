@@ -1,0 +1,5 @@
+mainmodule tester {
+  mainchare test_main {
+    entry [nokeep] test_main(CkArgMsg* m);
+  };
+};
