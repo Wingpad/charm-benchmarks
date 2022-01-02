@@ -1,0 +1,14 @@
+mainmodule tester {
+  mainchare Main {
+    entry [nokeep] Main(CkArgMsg* m);
+
+    entry [threaded] void run(CkArrayCreatedMsg*);
+  };
+
+  array [1D] Communicator {
+    entry Communicator(int, int);
+    entry void run(const CkCallback& cb);
+    entry void run(CkMessage*);
+    entry void recv_broadcast(CkMessage*);
+  };
+}
