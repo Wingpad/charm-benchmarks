@@ -1,0 +1,24 @@
+mainmodule pgm
+{
+    mainchare Main
+    {
+        entry [nokeep] Main(CkArgMsg*);
+        entry [nokeep, threaded] void run(CkArrayCreatedMsg*);
+    };
+
+    readonly std::uint32_t nWorkers;
+    readonly std::uint32_t nElements;
+
+    array[1D] TestArray
+    {
+        entry void TestArray(msa_type);
+
+        entry [threaded] void run_better(CkCallback);
+        entry [threaded] void run_worse(CkCallback);
+    };
+    
+    /* Currently, you must explicitly instantiate any
+       MSA templates that you use. */
+    group MSA_CacheGroup<data_type, DefaultEntry<data_type>, MSA_DEFAULT_ENTRIES_PER_PAGE>;
+    array [1D] MSA_PageArray<data_type, DefaultEntry<data_type>, MSA_DEFAULT_ENTRIES_PER_PAGE>;
+};
