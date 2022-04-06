@@ -1,0 +1,28 @@
+mainmodule tester {
+  mainchare Main {
+    entry [nokeep] Main(CkArgMsg*);
+    entry [threaded] void run(void);
+  };
+
+  chare Receiver {
+    entry Receiver(void);
+
+    entry void receive(int size, dtype arr[size]);
+    entry void receive(const holder<dtype>&);
+
+    entry void run(bool hold, int nIterations, const CkCallback& cb) {
+      for (auto it = 0; it < nIterations; it++) {
+        if (hold) {
+          when receive(const holder<dtype>& x) serial {
+            CkAssert(check(x.size, x.arr));
+          }
+        } else {
+          when receive(int size, dtype arr[size]) serial {
+            CkAssert(check(size, arr));
+          }
+        }
+      }
+      serial { cb.send(); }
+    }
+  };
+};
